@@ -52,6 +52,17 @@
       }
    },
    "release_status" : "unstable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/mixi-inc/p5-Text-AvoidBug-Apple-CoreText/issues"
+      },
+      "homepage" : "https://github.com/mixi-inc/p5-Text-AvoidBug-Apple-CoreText",
+      "repository" : {
+         "type" : "git",
+         "url" : "git://github.com/mixi-inc/p5-Text-AvoidBug-Apple-CoreText.git",
+         "web" : "https://github.com/mixi-inc/p5-Text-AvoidBug-Apple-CoreText"
+      }
+   },
    "version" : "0.01",
    "x_contributors" : [
       "Shigeki Morimoto <github@morimo.to>"
