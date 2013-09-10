@@ -6,12 +6,10 @@ use warnings;
 
 use utf8;
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 our $IN_BUG_SPACER;
 our $IN_BUG_COMBINING;
-our %BUG_SPACER_MAP;
-our %BUG_COMBINING_MAP;
 
 _init();
 
@@ -40,23 +38,19 @@ sub _init {
         [ 0xfe20, 0xfe2f ],
     );
 
-    _code_list_to_code_map(\@BUG_SPACER,    \$IN_BUG_SPACER,    \%BUG_SPACER_MAP);
-    _code_list_to_code_map(\@BUG_COMBINING, \$IN_BUG_COMBINING, \%BUG_COMBINING_MAP);
+    _code_list_to_code_map(\@BUG_SPACER,    \$IN_BUG_SPACER);
+    _code_list_to_code_map(\@BUG_COMBINING, \$IN_BUG_COMBINING);
 }
 
 sub _code_list_to_code_map {
-    my($code_list, $in_xxx, $code_map) = @_;
+    my($code_list, $in_xxx) = @_;
 
     my @range;
     foreach my $code (@$code_list){
         if(ref($code)){
             push(@range, sprintf("%x\t%x\n", $code->[0], $code->[1]));
-            foreach my $sub_code ($code->[0] .. $code->[1]){
-                $code_map->{$sub_code} = 1;
-            }
         }else{
             push(@range, sprintf("%x\n", $code));
-            $code_map->{$code} = 1;
         }
     }
     $$in_xxx = join('', @range);
@@ -70,50 +64,40 @@ sub InBugCombining{
     $IN_BUG_COMBINING;
 }
 
+## NOTE
+# those regexp are genereated with Regexp::Assemble
+#
+# like this
+#
+# my $ra = Regexp::Assemble->new;
+# foreach my $code (@BUG_SPACER){ # or @BUG_COMBINING
+#     if (ref($code)) {
+#         foreach my $subcode ($code->[0] .. $code->[1]) {
+#             $ra->add(sprintf('&#x0*%x;?', $subcode));
+#             $ra->add(sprintf('&#0*%d;?', $subcode));
+#         }
+#     } else {
+#         $ra->add(sprintf('&#x0*%x;?', $code));
+#         $ra->add(sprintf('&#0*%d;?', $code));
+#     }
+# }
+# $ra->re;
+our $SPACER_RE = '(?^:&#(?:0*(?:8(?:2(?:0[012]|39|87)|19[23456789])|1(?:2288|60)|5760|6158|32|9)|x0*(?:20(?:0[\da]|[25]f)?|1(?:680|80e)|(?:300|a)0|9));?)';
+our $COMBINING_RE = '(?^:&#(?:0*(?:1(?:1(?:7(?:4[456789]|7[012345]|[56]\d)|5[56789])|2(?:33[0123]|44[12]))|8(?:4(?:[56789]|4[01234567]?|[0123]\d?)|[0123567]\d)|7(?:6(?:[89]|[234567]\d|1[6789])|[789]\d)|650(?:5[6789]|7[01]|6\d)|4(?:262[01]|959))|x0*(?:3(?:0(?:[01345678abcdef]|2[abcd]?|9[9a]?)|[123456][\dabcdef])|(?:2(?:0[def]|d[ef])|fe2)[\dabcdef]|1(?:d[cdef][\dabcdef]|35f)|48[34567]|a67[cd]));?)';
+
 sub filter {
     my $str = shift; # must be utf8 string
     my $dont_convert_entity_reference = shift;
 
-    $str =~ s/(
-                  (
-                      \p{InBugSpacer}
-                  |
-                      &(?:nbsp);?
-                  |
-                      &\#(x[0-9a-f]+|[0-9]+);?
-                  )(
-                      \p{InBugCombining}
-                  |
-                      &\#(x[0-9a-f]+|[0-9]+);?
-              )
-          )/_add_lrm($dont_convert_entity_reference, $1, $2, $3, $4, $5)/xieg;
+    $str =~ s/((\p{InBugSpacer}|&(?:nbsp);?|$SPACER_RE)(\p{InBugCombining}|$COMBINING_RE))/_add_lrm($dont_convert_entity_reference, $1, $2, $3)/xiego;
     $str;
 }
 
 sub _add_lrm {
-    my($dont_convert_entity_reference, $original, $spacer, $spacer_code, $combining, $combining_code) = @_;
+    my($dont_convert_entity_reference, $original, $spacer, $combining) = @_;
 
     return $original if($dont_convert_entity_reference && $spacer =~ /^&/);
     return $original if($dont_convert_entity_reference && $combining =~ /^&/);
-
-    if($spacer =~ /^&#/){
-        $spacer_code = hex($1) if($spacer_code =~ /^x(.*)/i);
-        $spacer_code += 0;
-        if($BUG_SPACER_MAP{$spacer_code}){
-            # fall through
-        }else{
-            return $original;
-        }
-    }
-    if($combining =~ /^&#/){
-        $combining_code = hex($1) if($combining_code =~ /^x(.*)/i);
-        $combining_code += 0;
-        if($BUG_COMBINING_MAP{$combining_code}){
-            # fall through
-        }else{
-            return $original;
-        }
-    }
 
     $spacer . "\x{200e}" . $combining;
 }

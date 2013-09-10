@@ -24,6 +24,8 @@ subtest 'normal utf8' => sub {
 
 subtest 'must be filtered' => sub {
     is_filterd(" \x{300}");
+
+    is_filterd(["&#x20;&#x20", "\x{300}"]);
 };
 
 done_testing;
