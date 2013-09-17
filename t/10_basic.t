@@ -17,21 +17,15 @@ subtest ascii => sub {
     no_filterd("foo bar baz &lt; <>");
 };
 
-subtest 'left to right' => sub {
+subtest 'normal utf8' => sub {
     no_filterd("あいうえお");
-    no_filterd("ａｂｃｄｅｆｇ");
+    no_filterd("漢字");
 };
 
-subtest simple => sub {
-    is_filterd("\x{600}");
-    is_filterd("&#x600");
-    is_filterd("&#x600;");
-};
+subtest 'must be filtered' => sub {
+    is_filterd(" \x{300}");
 
-subtest 'simple no entity reference' => sub {
-    is_filterd("\x{600}", 1);
-    no_filterd("&#x600", 1);
-    no_filterd("&#x600;", 1);
+    is_filterd(["&#x20;&#x20", "\x{300}"]);
 };
 
 done_testing;

@@ -11,7 +11,14 @@ our @EXPORT = qw(is_filterd no_filterd eq_filterd);
 sub is_filterd {
     my($original, $dont_convert_entity_reference) = @_;
 
-    eq_filterd($original, $original . "\x{200e}", $dont_convert_entity_reference);
+    my $expected;
+    if(ref($original)){
+        $expected = $original->[0] . "\x{200e}" . $original->[1];
+        $original = $original->[0] . $original->[1];
+    }else{
+        ($expected = $original) =~ s/(.)(.)/$1\x{200e}$2/;
+    }
+    eq_filterd($original, $expected, $dont_convert_entity_reference);
 }
 
 sub no_filterd {
