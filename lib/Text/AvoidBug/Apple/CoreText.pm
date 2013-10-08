@@ -8,7 +8,7 @@ no warnings 'surrogate';
 
 use utf8;
 
-our $VERSION = "0.03";
+our $VERSION = "0.04";
 
 our $IN_BUG_SPACER;
 our $IN_BUG_COMBINING;
