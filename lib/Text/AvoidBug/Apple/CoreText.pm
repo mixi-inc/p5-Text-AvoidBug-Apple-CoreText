@@ -4,6 +4,8 @@ use 5.008005;
 use strict;
 use warnings;
 
+no warnings 'surrogate';
+
 use utf8;
 
 our $VERSION = "0.03";
